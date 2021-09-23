@@ -1,4 +1,5 @@
 module.exports = {
+  pathPrefix: "/DemoGatsby",
   siteMetadata: {
     siteUrl: "https://www.yourdomain.tld",
     title: "My Gatsby Site",
