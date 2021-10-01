@@ -1,1 +1,0 @@
-{"version":3,"file":"component---src-pages-other-js-f8633162b7a53a8289cb.js","mappings":"wIAIA,UAHkB,WACd,OAAO","sources":["webpack://my-gatsby-site/./src/pages/other.js"],"sourcesContent":["import * as React from \"react\"\r\nconst otherPage = () => {\r\n    return <div>Another page</div>\r\n}\r\nexport default otherPage;"],"names":[],"sourceRoot":""}

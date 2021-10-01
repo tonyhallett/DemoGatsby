@@ -1,0 +1,5 @@
+{
+    "componentChunkName": "component---src-templates-dynamic-page-template-js",
+    "path": "/dynamicPage2",
+    "result": {"pageContext":{"numPages":3,"pageNumber":2,"pathPrefix":"dynamicPage"}},
+    "staticQueryHashes": []}

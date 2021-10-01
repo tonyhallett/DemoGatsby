@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkmy_gatsby_site=self.webpackChunkmy_gatsby_site||[]).push([[120],{1748:function(e,t,n){n.r(t);var l=n(7294);t.default=function(){return l.createElement("main",null,l.createElement("title",null,"MDX Plugin"))}}}]);
+//# sourceMappingURL=component---src-pages-deepdive-mdxplugin-js-ff1e0bd02065d047b9bb.js.map
