@@ -1,0 +1,171 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta http-equiv="x-ua-compatible" content="ie=edge"/><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/><meta name="generator" content="Gatsby 3.14.0"/><link as="script" rel="preload" href="/DemoGatsby/webpack-runtime-92ea2c36fbfb344b443f.js"/><link as="script" rel="preload" href="/DemoGatsby/framework-33b76a5d919ecf8a8684.js"/><link as="script" rel="preload" href="/DemoGatsby/app-0d7647bce7fd84d9a89d.js"/><link as="script" rel="preload" href="/DemoGatsby/3710c607fb7064fe4fae57fa2457800b9099a42b-828b874f09212eef7e62.js"/><link as="script" rel="preload" href="/DemoGatsby/component---src-pages-deepdive-gatsby-reporter-js-75b6f100488f1bc790b2.js"/><link as="fetch" rel="preload" href="/DemoGatsby/page-data/deepdive/gatsby/reporter/page-data.json" crossorigin="anonymous"/><link as="fetch" rel="preload" href="/DemoGatsby/page-data/app-data.json" crossorigin="anonymous"/></head><body><div id="___gatsby"><div style="outline:none" tabindex="-1" id="gatsby-focus-wrapper"><main><title>Reporter</title><p>The reporter is used by the cli and the build.  The logging to the console occurs when a reporter action is <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/redux/index.ts#L64" rel="noreferrer" target="_blank">invoked</a>.</p><p>The reporter does more than just log messages but concentrating on messages for a moment.  For success, info, warn, log ( and verbose if set in config ) the reporter  <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/reporter.ts#L217" rel="noreferrer" target="_blank">invokes the createLog redux action</a>. How this results in message in the console begins by understanding <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/index.ts" rel="noreferrer" target="_blank">this</a> in particular <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/start-logger.ts#L11" rel="noreferrer" target="_blank">startLogger</a></p><pre style="display:block;overflow-x:auto;padding:0.5em;color:#000;background:#f8f8ff"><code class="language-javascript" style="white-space:pre"><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { startLogger } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./start-logger&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { patchConsole } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./patch-console&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { catchExitSignals } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./catch-exit-signals&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { reporter } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./reporter&quot;</span><span>
+</span>  
+<!-- -->  catchExitSignals()
+<!-- -->  startLogger()
+<!-- -->  patchConsole(reporter)
+<!-- -->  
+<span>  </span><span style="color:#954121">export</span><span> </span><span style="color:#954121">default</span><span> reporter
+</span><span>  </span><span style="color:#0086b3">module</span><span>.exports = reporter
+</span>  
+</code></pre><p>patchConsole is simple in that console.log, warn, info and error are replaced to call through to the similarly named methods of the reporter.</p><p>startLogger determines the logger to use. You can specify with the environment variable GATSBY_LOGGER to change from the default ink to the json logger or yurnalist.</p><p><a href="https://github.com/vadimdemedes/ink#readme" rel="noreferrer" target="_blank">ink</a></p><cite>Ink provides the same component-based UI building experience that React offers in the browser, but for command-line apps. It uses Yoga to build Flexbox layouts in the terminal, so most CSS-like props are available in Ink as well.</cite><p>Initializing ink uses the render method of ink </p><pre style="display:block;overflow-x:auto;padding:0.5em;color:#000;background:#f8f8ff"><code class="language-javascript" style="white-space:pre"><span>
+</span><span>  </span><span style="color:#954121">import</span><span> React, { useContext } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;react&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { render } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;ink&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> StoreStateContext, { StoreStateProvider } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./context&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> CLI </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./cli&quot;</span><span>
+</span>  
+<span>  </span><span style="color:#954121">const</span><span> ConnectedCLI: React.FC = (): React.ReactElement =&gt; {
+</span><span>    </span><span style="color:#954121">const</span><span> state = useContext(StoreStateContext)
+</span><span>    </span><span style="color:#954121">const</span><span> showStatusBar =
+</span><span>      </span><span style="color:#408080;font-style:italic">// @ts-ignore - program exists on state but we should refactor this</span><span>
+</span><span>      state.program?._?.[</span><span style="color:#40a070">0</span><span>] === </span><span style="color:#219161">`develop`</span><span> &amp;&amp;
+</span><span>      </span><span style="color:#408080;font-style:italic">// @ts-ignore - program exists on state but we should refactor this</span><span>
+</span><span>      state.program?.status === </span><span style="color:#219161">`BOOTSTRAP_FINISHED`</span><span>
+</span><span>    </span><span style="color:#954121">const</span><span> showPageTree = !!state.pageTree
+</span>  
+<span>    </span><span style="color:#954121">return</span><span> (
+</span><span>      </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">CLI</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">        </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">showStatusBar</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{Boolean(showStatusBar)}</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">        </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">showPageTree</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{Boolean(showPageTree)}</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">        </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">logs</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{state.logs}</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">      /&gt;</span><span>
+</span>    )
+<!-- -->  }
+<!-- -->  
+<span>  </span><span style="color:#954121">export</span><span> </span><span class="hljs-function" style="color:#954121">function</span><span class="hljs-function"> </span><span class="hljs-function" style="color:#458;font-weight:bold">initializeINKLogger</span><span class="hljs-function">(</span><span class="hljs-function">): </span><span class="hljs-function" style="color:#458;font-weight:bold">void</span><span class="hljs-function"> </span><span>{
+</span>    render(
+<span>      </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">StoreStateProvider</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span class="xml">
+</span><span class="xml">        </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">ConnectedCLI</span><span class="xml" style="color:#000080;font-weight:normal"> /&gt;</span><span class="xml">
+</span><span class="xml">      </span><span class="xml" style="color:#000080;font-weight:normal">&lt;/</span><span class="xml" style="color:#000080;font-weight:normal">StoreStateProvider</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span>
+</span>    )
+<!-- -->  }
+<!-- -->  
+</code></pre><p>Key to above is the StoreStateProvider that <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/redux/index.ts#L72" rel="noreferrer" target="_blank">listens</a> for <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/redux/index.ts#L64" rel="noreferrer" target="_blank">public actions</a>and provides the reporter <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/redux/index.ts#L30" rel="noreferrer" target="_blank">store</a> state through context that the ConnectedCLI receives and passes the logs state to CLI.</p><pre style="display:block;overflow-x:auto;padding:0.5em;color:#000;background:#f8f8ff"><code class="language-javascript" style="white-space:pre"><span>
+</span><span>  </span><span style="color:#954121">import</span><span> React, { useState, useLayoutEffect, createContext } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;react&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { getStore, onLogAction } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;../../redux&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { IGatsbyCLIState } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;../../redux/types&quot;</span><span>
+</span><span>  </span><span style="color:#954121">import</span><span> { IRenderPageArgs } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;../../types&quot;</span><span>
+</span>  
+<span>  </span><span style="color:#954121">const</span><span> StoreStateContext = createContext&lt;{
+</span><span>    </span><span class="hljs-attr">logs</span><span>: IGatsbyCLIState
+</span><span>    </span><span class="hljs-attr">pageTree</span><span>: IRenderPageArgs | </span><span style="color:#954121">null</span><span>
+</span>  }&gt;(getStore().getState())
+<!-- -->  
+<span>  </span><span style="color:#954121">export</span><span> </span><span style="color:#954121">const</span><span> StoreStateProvider: React.FC = ({
+</span>    children,
+<!-- -->  }): React.ReactElement =&gt; {
+<span>    </span><span style="color:#954121">const</span><span> [state, setState] = useState(getStore().getState())
+</span>  
+<!-- -->    useLayoutEffect(
+<span>      </span><span class="hljs-function">() =&gt;</span><span>
+</span><span>        onLogAction(</span><span class="hljs-function">() =&gt;</span><span> {
+</span>          setState(getStore().getState())
+<!-- -->        }),
+<!-- -->      []
+<!-- -->    )
+<!-- -->  
+<span>    </span><span style="color:#954121">return</span><span> (
+</span><span>      </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">StoreStateContext.Provider</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">value</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{state}</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span class="xml">
+</span><span class="xml">        {children}
+</span><span class="xml">      </span><span class="xml" style="color:#000080;font-weight:normal">&lt;/</span><span class="xml" style="color:#000080;font-weight:normal">StoreStateContext.Provider</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span>
+</span>    )
+<!-- -->  }
+<!-- -->  
+<span>  </span><span style="color:#954121">export</span><span> </span><span style="color:#954121">default</span><span> StoreStateContext
+</span>  
+</code></pre><p>Concentrating on just the <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/redux/reducers/logs.ts#L28" rel="noreferrer" target="_blank">messages</a> from the createLog action</p><pre style="display:block;overflow-x:auto;padding:0.5em;color:#000;background:#f8f8ff"><code class="language-javascript" style="white-space:pre"><span>
+</span>            &lt;Static items={messages}&gt;
+<!-- -->            {(message): React.ReactElement =&gt;
+<span>              message.level === </span><span style="color:#219161">`ERROR`</span><span> ? (
+</span><span>                </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">ErrorComponent</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">                  </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">details</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{message</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">as</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">IStructuredError</span><span class="xml" style="color:#000080;font-weight:normal">}
+</span><span class="xml" style="color:#000080;font-weight:normal">                  </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">key</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{messages.indexOf(message)}</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">                /&gt;</span><span>
+</span>              ) : (
+<span>                </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">Message</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">                  </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">key</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">{messages.indexOf(message)}</span><span class="xml" style="color:#000080;font-weight:normal">
+</span><span class="xml" style="color:#000080;font-weight:normal">                  {</span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">...</span><span class="xml" style="color:#000080;font-weight:normal">(</span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">message</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">as</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">IMessageProps</span><span class="xml" style="color:#000080;font-weight:normal">)}
+</span><span class="xml" style="color:#000080;font-weight:normal">                /&gt;</span><span>
+</span>              )
+<!-- -->            }
+<!-- -->          &lt;/Static&gt;
+<!-- -->  
+</code></pre><p>The <a href="https://github.com/gatsbyjs/gatsby/blob/a1f35ca37aed1b076f057f1522b56b75a3bdf223/packages/gatsby-cli/src/reporter/loggers/ink/components/messages.tsx#L37" rel="noreferrer" target="_blank">Message component</a>.</p><pre style="display:block;overflow-x:auto;padding:0.5em;color:#000;background:#f8f8ff"><code class="language-javascript" style="white-space:pre"><span>
+</span><span>        </span><span style="color:#954121">import</span><span> React </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;react&quot;</span><span>
+</span><span>        </span><span style="color:#954121">import</span><span> { Box, Text } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;ink&quot;</span><span>
+</span><span>        </span><span style="color:#954121">import</span><span> { createLabel } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;./utils&quot;</span><span>
+</span>        
+<span>        </span><span style="color:#954121">import</span><span> { ActivityLogLevels, LogLevels } </span><span style="color:#954121">from</span><span> </span><span style="color:#219161">&quot;../../../constants&quot;</span><span>
+</span>        
+<span>        </span><span style="color:#954121">const</span><span> getLabel = (
+</span>          level: ActivityLogLevels | LogLevels
+<span>        ): ReturnType&lt;</span><span style="color:#954121">typeof</span><span> createLabel&gt; =&gt; {
+</span><span>          </span><span style="color:#954121">switch</span><span> (level) {
+</span><span>            </span><span style="color:#954121">case</span><span> ActivityLogLevels.Success:
+</span><span>            </span><span style="color:#954121">case</span><span> LogLevels.Success:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(</span><span style="color:#219161">`success`</span><span>, </span><span style="color:#219161">`green`</span><span>)
+</span><span>            </span><span style="color:#954121">case</span><span> LogLevels.Warning:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(</span><span style="color:#219161">`warn`</span><span>, </span><span style="color:#219161">`yellow`</span><span>)
+</span><span>            </span><span style="color:#954121">case</span><span> LogLevels.Debug:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(</span><span style="color:#219161">`verbose`</span><span>, </span><span style="color:#219161">`gray`</span><span>)
+</span><span>            </span><span style="color:#954121">case</span><span> LogLevels.Info:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(</span><span style="color:#219161">`info`</span><span>, </span><span style="color:#219161">`blue`</span><span>)
+</span><span>            </span><span style="color:#954121">case</span><span> ActivityLogLevels.Failed:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(</span><span style="color:#219161">`failed`</span><span>, </span><span style="color:#219161">`red`</span><span>)
+</span><span>            </span><span style="color:#954121">case</span><span> ActivityLogLevels.Interrupted:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(</span><span style="color:#219161">`not finished`</span><span>, </span><span style="color:#219161">`gray`</span><span>)
+</span>        
+<span>            </span><span class="hljs-attr">default</span><span>:
+</span><span>              </span><span style="color:#954121">return</span><span> createLabel(level, </span><span style="color:#219161">`blue`</span><span>)
+</span>          }
+<!-- -->        }
+<!-- -->
+<span>        </span><span style="color:#408080;font-style:italic">/*
+</span><span class="xml">            export const createLabel =
+</span><span class="xml">            (text: string, color: string): FunctionComponent&lt;TextProps&gt; =&gt;
+</span><span class="xml">            (...props): JSX.Element =&gt;
+</span><span class="xml">            (
+</span><span class="xml">                &lt;Text color={color} {...props}&gt;
+</span><span class="xml">                    {text}
+</span><span class="xml">                &lt;/Text&gt;
+</span><span class="xml">            )
+</span><span style="color:#408080;font-style:italic">        */</span><span>
+</span>        
+<span>        </span><span style="color:#954121">export</span><span> interface IMessageProps {
+</span><span>          </span><span class="hljs-attr">level</span><span>: ActivityLogLevels | LogLevels
+</span><span>          </span><span class="hljs-attr">text</span><span>: string
+</span>          duration?: number
+<!-- -->          statusText?: string
+<!-- -->        }
+<!-- -->        
+<span>        </span><span style="color:#954121">export</span><span> </span><span style="color:#954121">const</span><span> Message = React.memo&lt;IMessageProps&gt;(
+</span><span>          </span><span class="hljs-function">(</span><span class="hljs-function" style="color:#00f">{ level, text, duration, statusText }</span><span class="hljs-function">) =&gt;</span><span> {
+</span><span>            </span><span style="color:#954121">let</span><span> message = text
+</span><span>            </span><span style="color:#954121">if</span><span> (duration) {
+</span><span>              message += </span><span style="color:#219161">` - </span><span style="color:#954121">${duration.toFixed(</span><span style="color:#40a070">3</span><span style="color:#954121">)}</span><span style="color:#219161">s`</span><span>
+</span>            }
+<span>            </span><span style="color:#954121">if</span><span> (statusText) {
+</span><span>              message += </span><span style="color:#219161">` - </span><span style="color:#954121">${statusText}</span><span style="color:#219161">`</span><span>
+</span>            }
+<span>            </span><span style="color:#954121">if</span><span> (!level || level === </span><span style="color:#219161">`LOG`</span><span>) {
+</span><span>              </span><span style="color:#954121">return</span><span> </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">Text</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span class="xml">{message}</span><span class="xml" style="color:#000080;font-weight:normal">&lt;/</span><span class="xml" style="color:#000080;font-weight:normal">Text</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span>
+</span>            }
+<!-- -->        
+<span>            </span><span style="color:#954121">const</span><span> TextLabel = getLabel(level)
+</span>        
+<span>            </span><span style="color:#954121">return</span><span> (
+</span><span>              </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">Box</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">flexDirection</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">&quot;row&quot;</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span class="xml">
+</span><span class="xml">                </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">Text</span><span class="xml" style="color:#000080;font-weight:normal"> </span><span class="xml hljs-attr" style="color:#000080;font-weight:normal">wrap</span><span class="xml" style="color:#000080;font-weight:normal">=</span><span class="xml" style="color:#219161;font-weight:normal">&quot;wrap&quot;</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span class="xml">
+</span><span class="xml">                  </span><span class="xml" style="color:#000080;font-weight:normal">&lt;</span><span class="xml" style="color:#000080;font-weight:normal">TextLabel</span><span class="xml" style="color:#000080;font-weight:normal"> /&gt;</span><span class="xml">
+</span><span class="xml">                  {` `}
+</span><span class="xml">                  {message}
+</span><span class="xml">                </span><span class="xml" style="color:#000080;font-weight:normal">&lt;/</span><span class="xml" style="color:#000080;font-weight:normal">Text</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span class="xml">
+</span><span class="xml">              </span><span class="xml" style="color:#000080;font-weight:normal">&lt;/</span><span class="xml" style="color:#000080;font-weight:normal">Box</span><span class="xml" style="color:#000080;font-weight:normal">&gt;</span><span>
+</span>            )
+<!-- -->          }
+<!-- -->        )
+<!-- -->  
+</code></pre><p>We can see that prefix only ( success etc ) is coloured and hard coded and dependent upon the message level associated with reporter.success, warn, info and log.</p></main></div><div id="gatsby-announcer" style="position:absolute;top:0;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border:0" aria-live="assertive" aria-atomic="true"></div></div><script id="gatsby-script-loader">/*<![CDATA[*/window.pagePath="/deepdive/gatsby/reporter/";/*]]>*/</script><script id="gatsby-chunk-mapping">/*<![CDATA[*/window.___chunkMapping={"polyfill":["/polyfill-fd5502421d629d1c910a.js"],"app":["/app-0d7647bce7fd84d9a89d.js"],"component---src-pages-404-js":["/component---src-pages-404-js-b2cc411f045347620867.js"],"component---src-pages-deepdive-cli-js":["/component---src-pages-deepdive-cli-js-5741b91b6777519321aa.js"],"component---src-pages-deepdive-gatsby-apicalls-node-build-js":["/component---src-pages-deepdive-gatsby-apicalls-node-build-js-e5e4b56ca87f5d0bb4a6.js"],"component---src-pages-deepdive-gatsby-apicalls-node-creating-nodes-js":["/component---src-pages-deepdive-gatsby-apicalls-node-creating-nodes-js-b79bfcf2bc434d369d1d.js"],"component---src-pages-deepdive-gatsby-apicalls-node-creating-pages-js":["/component---src-pages-deepdive-gatsby-apicalls-node-creating-pages-js-2dfb533b04b8d55e2216.js"],"component---src-pages-deepdive-gatsby-apicalls-node-index-js":["/component---src-pages-deepdive-gatsby-apicalls-node-index-js-25bcd576de4091c3fafe.js"],"component---src-pages-deepdive-gatsby-apicalls-node-nodes-js":["/component---src-pages-deepdive-gatsby-apicalls-node-nodes-js-78ea86f5dc156d3e163d.js"],"component---src-pages-deepdive-gatsby-apicalls-node-pages-js":["/component---src-pages-deepdive-gatsby-apicalls-node-pages-js-429f58648a20d576e77a.js"],"component---src-pages-deepdive-gatsby-debugging-js":["/component---src-pages-deepdive-gatsby-debugging-js-d5ef0d64a47152f2106d.js"],"component---src-pages-deepdive-gatsby-index-js":["/component---src-pages-deepdive-gatsby-index-js-e7b7db76472828d679e8.js"],"component---src-pages-deepdive-gatsby-plugins-js":["/component---src-pages-deepdive-gatsby-plugins-js-de83669c3a27e3acecd1.js"],"component---src-pages-deepdive-gatsby-prefixes-js":["/component---src-pages-deepdive-gatsby-prefixes-js-21b67aa42668832d6c37.js"],"component---src-pages-deepdive-gatsby-reporter-js":["/component---src-pages-deepdive-gatsby-reporter-js-75b6f100488f1bc790b2.js"],"component---src-pages-deepdive-gatsby-store-cache-js":["/component---src-pages-deepdive-gatsby-store-cache-js-dbe7ef065c5348ef6a7b.js"],"component---src-pages-deepdive-mdxplugin-js":["/component---src-pages-deepdive-mdxplugin-js-ff1e0bd02065d047b9bb.js"],"component---src-pages-index-js":["/component---src-pages-index-js-c65a6b8256ce98a6a1f4.js"],"component---src-pages-match-js":["/component---src-pages-match-js-1cabc63be828d8401b63.js"],"component---src-pages-mdx-mdx":["/component---src-pages-mdx-mdx-a0916c906b3d8eac84ca.js"],"component---src-templates-dynamic-page-template-js":["/component---src-templates-dynamic-page-template-js-5b35e311d2f48f0b9bdd.js"]};/*]]>*/</script><script src="/DemoGatsby/polyfill-fd5502421d629d1c910a.js" nomodule=""></script><script src="/DemoGatsby/component---src-pages-deepdive-gatsby-reporter-js-75b6f100488f1bc790b2.js" async=""></script><script src="/DemoGatsby/3710c607fb7064fe4fae57fa2457800b9099a42b-828b874f09212eef7e62.js" async=""></script><script src="/DemoGatsby/app-0d7647bce7fd84d9a89d.js" async=""></script><script src="/DemoGatsby/framework-33b76a5d919ecf8a8684.js" async=""></script><script src="/DemoGatsby/webpack-runtime-92ea2c36fbfb344b443f.js" async=""></script></body></html>
