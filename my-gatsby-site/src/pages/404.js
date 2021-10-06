@@ -25,7 +25,12 @@ const codeStyles = {
 }
 
 // markup
-const NotFoundPage = () => {
+const NotFoundPage = (pageProps) => {
+  var navigate = pageProps.navigate;
+  var matchPath = pageProps.pageResources.page.matchPath;
+  if(matchPath){
+    navigate(pageProps.uri);
+  }
   return (
     <main style={pageStyles}>
       <title>Not found</title>
