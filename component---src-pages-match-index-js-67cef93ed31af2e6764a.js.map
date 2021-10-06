@@ -1,0 +1,1 @@
+{"version":3,"file":"component---src-pages-match-index-js-67cef93ed31af2e6764a.js","mappings":"yIAKA,UAHoB,WAChB,OAAO","sources":["webpack://my-gatsby-site/./src/pages/match/index.js"],"sourcesContent":["import * as React from \"react\"\r\n\r\nconst placeholder = () => {\r\n    return <div></div>\r\n}\r\nexport default placeholder"],"names":[],"sourceRoot":""}
