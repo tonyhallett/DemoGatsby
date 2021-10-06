@@ -1,0 +1,6 @@
+{
+    "componentChunkName": "component---src-pages-match-match-js",
+    "path": "/match/[...match]/",
+    "result": {"pageContext":{"matchPath":"/match/*match"}},
+    "staticQueryHashes": [],
+    "matchPath": "/match/*match"}
