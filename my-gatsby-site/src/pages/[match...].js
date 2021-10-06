@@ -1,3 +1,4 @@
+import * as React from "react"
 const matchPage = (pageProps) => {
     return <main>
         <title>Match page</title>
