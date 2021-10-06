@@ -1,6 +1,0 @@
-{
-    "componentChunkName": "component---src-pages-[match]-js",
-    "path": "/[match]/",
-    "result": {"pageContext":{"matchPath":"/:match"}},
-    "staticQueryHashes": [],
-    "matchPath": "/:match"}
